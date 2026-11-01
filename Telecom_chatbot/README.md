@@ -103,6 +103,35 @@ python main.py
 
 Interactive prompt — type a question and press Enter. Type `quit` to exit.
 
+## Running with Docker
+
+The `Dockerfile` packages the Streamlit app with all dependencies (installed from `uv.lock`) and the source data (`faq.csv`, `tickets.db`, `telecom_guide.pdf`).
+
+**1. Build the image** (from the `Telecom_chatbot/` directory)
+
+```bash
+docker build -t telecom-rag-chatbot .
+```
+
+**2. Run the container**
+
+```bash
+docker run --rm -p 8501:8501 --env-file .env -v telecom-chroma:/app/chroma_store -v telecom-hf-cache:/app/.cache/huggingface telecom-rag-chatbot
+```
+
+Open `http://localhost:8501`.
+
+- `--env-file .env` passes `GROQ_API_KEY` (required) and `HF_TOKEN` (optional) into the container. You can use `-e GROQ_API_KEY=...` instead.
+- On first start the entrypoint runs `ingest_faq.py`, `ingest_tickets.py` and `ingest_pdf.py` to build the Chroma store from the CSV, the SQLite ticket database and the PDF. This downloads the embedding model from Hugging Face, so the first start takes a minute or two and needs internet access.
+- The two named volumes keep the Chroma store and the embedding model between runs, so later starts skip ingestion. Without them, ingestion runs again on every start.
+- To rebuild the vector store after changing anything in `data/`, rebuild the image and add `-e FORCE_REINGEST=1` to the run command.
+
+**Run the CLI instead of the web UI**
+
+```bash
+docker run --rm -it --env-file .env -v telecom-chroma:/app/chroma_store -v telecom-hf-cache:/app/.cache/huggingface telecom-rag-chatbot python main.py
+```
+
 ## Data Sources
 
 | Collection | Source file | Granularity |
