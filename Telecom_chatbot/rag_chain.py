@@ -1,7 +1,9 @@
 """
 Builds the RAG chain:
-  merged retriever → prompt → Qwen3-32B on Groq → string output
+  merged retriever → prompt → Qwen3.8-27B on Groq → string output
 """
+import os
+
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
@@ -43,7 +45,7 @@ def build_chain():
     ])
 
     llm = ChatGroq(
-        model="qwen/qwen3-32b",
+        model=os.getenv("GROQ_MODEL", "qwen/qwen3.8-27b"),
         temperature=0,
         max_tokens=None,
         reasoning_format="parsed",
