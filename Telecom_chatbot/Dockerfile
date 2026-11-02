@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 # Telecom RAG Chatbot — Streamlit UI backed by ChromaDB (vectors) and SQLite (tickets)
 
 FROM python:3.11-slim

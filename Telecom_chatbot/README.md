@@ -1,6 +1,6 @@
 # RAG Telecom Chatbot
 
-A Retrieval-Augmented Generation (RAG) customer care chatbot for telecom support. It answers questions about mobile connectivity, billing, SIM issues, and roaming by retrieving relevant context from three knowledge sources and generating responses with Qwen3-32B via Groq.
+A Retrieval-Augmented Generation (RAG) customer care chatbot for telecom support. It answers questions about mobile connectivity, billing, SIM issues, and roaming by retrieving relevant context from three knowledge sources and generating responses with Qwen3.8-27B via Groq.
 
 ## Architecture
 
@@ -14,11 +14,11 @@ Merged Retriever (top-k from each store)
   └── ChromaDB · guides     (PDF guide chunks)
      │
      ▼
-ChatPromptTemplate → Qwen3-32B (Groq) → Answer
+ChatPromptTemplate → Qwen3.8-27B (Groq) → Answer
 ```
 
 **Embedding model:** `sentence-transformers/all-MiniLM-L6-v2` (runs locally via HuggingFace)  
-**LLM:** `qwen/qwen3-32b` served by [Groq](https://groq.com)
+**LLM:** `qwen/qwen3.8-27b` served by [Groq](https://groq.com) (override with `GROQ_MODEL` in `.env`)
 
 ## Project Structure
 
@@ -70,8 +70,13 @@ Edit `.env` and fill in your keys:
 
 ```
 GROQ_API_KEY=your_groq_api_key_here
+GROQ_MODEL=qwen/qwen3.8-27b
 HF_TOKEN=your_huggingface_token_here
 ```
+
+- Write each line as `NAME=value`, with no quotes and no spaces around `=`. Docker passes quotes through as part of the value.
+- `GROQ_MODEL` is optional. Groq retires models from time to time; if you get a `model_not_found` error, list the models your key can use with `curl https://api.groq.com/openai/v1/models -H "Authorization: Bearer $GROQ_API_KEY"` and set `GROQ_MODEL` to one of them. If the new model is not a reasoning model, remove `reasoning_format="parsed"` from `rag_chain.py`.
+- `HF_TOKEN` is optional; the embedding model is public.
 
 **3. Ingest data into Chroma**
 
@@ -125,6 +130,16 @@ Open `http://localhost:8501`.
 - On first start the entrypoint runs `ingest_faq.py`, `ingest_tickets.py` and `ingest_pdf.py` to build the Chroma store from the CSV, the SQLite ticket database and the PDF. This downloads the embedding model from Hugging Face, so the first start takes a minute or two and needs internet access.
 - The two named volumes keep the Chroma store and the embedding model between runs, so later starts skip ingestion. Without them, ingestion runs again on every start.
 - To rebuild the vector store after changing anything in `data/`, rebuild the image and add `-e FORCE_REINGEST=1` to the run command.
+
+**Troubleshooting**
+
+| Error | Fix |
+|---|---|
+| `--env-file: open .env: ... cannot find the file` | Run the command from the `Telecom_chatbot/` folder and create `.env` from `.env.example`. |
+| `Bind for 0.0.0.0:8501 failed: port is already allocated` | An earlier container is still running. Stop it with `docker ps` then `docker stop <id>`, or map another port: `-p 8502:8501`. |
+| `401 Invalid API Key` | Check `GROQ_API_KEY` in `.env` (no quotes or spaces), then restart the container. No rebuild is needed for `.env` changes. |
+| `404 model_not_found` | Set `GROQ_MODEL` in `.env` to a model your key can use (see Setup). |
+| `ModuleNotFoundError` after editing code | Rebuild the image. Code is copied in at build time. |
 
 **Run the CLI instead of the web UI**
 
