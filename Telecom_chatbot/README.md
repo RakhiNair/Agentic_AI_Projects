@@ -156,15 +156,3 @@ docker run --rm -it --env-file .env -v telecom-chroma:/app/chroma_store -v telec
 | `guides` | `data/telecom_guide.pdf` | Chunks of 600 chars with 100-char overlap |
 
 The retriever fetches the top 3 results from each collection (9 context documents total) for every query.
-
-## Regenerating Seed Data
-
-```bash
-# Seed the SQLite ticket database
-python data/seed_tickets.py
-
-# Regenerate the PDF guide
-python data/generate_pdf.py
-```
-
-After regenerating, re-run the corresponding ingest script.
